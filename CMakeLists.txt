@@ -43,4 +43,4 @@ elseif (UNIX)
 endif()
 set(SECP256K1_ROOT "/usr/local")
 
-include(UnitTestsExternalProject.txt)
+#include(UnitTestsExternalProject.txt)
