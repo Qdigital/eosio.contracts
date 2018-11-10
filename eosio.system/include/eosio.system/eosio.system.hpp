@@ -159,7 +159,7 @@ namespace eosiosystem {
       // Last time the user claimed their share of the 2% inflation
       time_point            last_claim_time;
       // The total supply at last claim
-      uint64_t              last_claim_supply;
+      eosio::asset              last_claim_supply;
 
       uint64_t primary_key()const { return owner.value; }
 
@@ -329,7 +329,10 @@ namespace eosiosystem {
 
       private:
          // Implementation details:
-
+         
+         [[eosio::action]]
+         void _claimpayout( const name user, const bool should_raise = false );
+         
          static symbol get_core_symbol( const rammarket& rm ) {
             auto itr = rm.find(ramcore_symbol.raw());
             eosio_assert(itr != rm.end(), "system contract must first be initialized");

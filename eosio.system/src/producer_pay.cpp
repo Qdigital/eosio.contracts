@@ -74,7 +74,17 @@ namespace eosiosystem {
    }
 
    using namespace eosio;
-   void _claimpayout( const voter_info& voter ) {
+   void system_contract::_claimpayout( const name user, const bool should_raise) {
+     const auto &voter = _voters.get(user.value, "No voter information found");
+     const auto assertion_1 = voter.proxy || voter.producers.size() > 21;
+     const auto assertion_2 = current_time_point() - voter.last_claim_time > microseconds(useconds_per_day);
+     if(should_raise) {
+       eosio_assert(assertion_1, "You must vote for more than 21 BPs or set a proxy in order to be eligible");
+       eosio_assert(assertion_2, "already claimed payout within past day" );       
+     } else {
+       if(!assertion_1 or !assertion_2) return;
+     }
+     
      const auto token_supply = eosio::token::get_supply(token_account, core_symbol().code() );
      
      const auto staked_tokens = asset(voter.staked, core_symbol());
@@ -85,10 +95,10 @@ namespace eosiosystem {
      const auto community_share = new_tokens * 2 / 5; // 2%
      const auto user_percentage = double(voter.staked) / double(token_supply.amount);
      const auto payout_amount = static_cast<int64_t>( 
-       community_share * user_percentage 
+       community_share.amount * user_percentage 
      );
      
-     voters.modify(voter, same_payer, [&](auto& v) {
+     _voters.modify(voter, same_payer, [&](auto& v) {
        v.last_claim_time = current_time_point();
        v.last_claim_supply = token_supply;
      });
@@ -101,12 +111,7 @@ namespace eosiosystem {
    
    void system_contract::claimpayout( const name user ) {
      require_auth( user );
-     const auto &voter = _voters.get(user.value, "No voter information found");
-     
-     eosio_assert(voter.proxy || voter.producers.size() > 21, "You must vote for more than 21 BPs or set a proxy in order to be eligible");
-     eosio_assert( current_time_point() - voter.last_claim_time > microseconds(useconds_per_day), "already claimed payout within past day" );
-     
-     _claimpayout(voter);
+     _claimpayout(user, true);
    }
    
    void system_contract::claimrewards( const name owner ) {
