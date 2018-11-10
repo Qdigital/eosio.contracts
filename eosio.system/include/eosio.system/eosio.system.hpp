@@ -154,6 +154,12 @@ namespace eosiosystem {
       uint32_t            reserved1 = 0;
       uint32_t            reserved2 = 0;
       eosio::asset        reserved3;
+      
+      // Project Robin Hood
+      // Last time the user claimed their share of the 2% inflation
+      time_point            last_claim_time;
+      // The total supply at last claim
+      uint64_t              last_claim_supply;
 
       uint64_t primary_key()const { return owner.value; }
 
@@ -299,6 +305,9 @@ namespace eosiosystem {
          [[eosio::action]]
          void setparams( const eosio::blockchain_parameters& params );
 
+         [[eosio::action]]
+         void claimpayout( const name owner );
+         
          // functions defined in producer_pay.cpp
          [[eosio::action]]
          void claimrewards( const name owner );

@@ -74,6 +74,41 @@ namespace eosiosystem {
    }
 
    using namespace eosio;
+   void _claimpayout( const voter_info& voter ) {
+     const auto token_supply = eosio::token::get_supply(token_account, core_symbol().code() );
+     
+     const auto staked_tokens = asset(voter.staked, core_symbol());
+     
+     // number of tokens that were issued since the last time the user claimed
+     const auto new_tokens = token_supply - voter.last_claim_supply; 
+     
+     const auto community_share = new_tokens * 2 / 5; // 2%
+     const auto user_percentage = double(voter.staked) / double(token_supply.amount);
+     const auto payout_amount = static_cast<int64_t>( 
+       community_share * user_percentage 
+     );
+     
+     voters.modify(voter, same_payer, [&](auto& v) {
+       v.last_claim_time = current_time_point();
+       v.last_claim_supply = token_supply;
+     });
+     
+     INLINE_ACTION_SENDER(eosio::token, transfer)(
+        token_account, { {_self, active_permission} },
+        { community_account, user, asset(payout_amount, core_symbol()), "Thank you for voting for more than 21 BPs" }
+     );
+   }
+   
+   void system_contract::claimpayout( const name user ) {
+     require_auth( user );
+     const auto &voter = _voters.get(user.value, "No voter information found");
+     
+     eosio_assert(voter.proxy || voter.producers.size() > 21, "You must vote for more than 21 BPs or set a proxy in order to be eligible");
+     eosio_assert( current_time_point() - voter.last_claim_time > microseconds(useconds_per_day), "already claimed payout within past day" );
+     
+     _claimpayout(voter);
+   }
+   
    void system_contract::claimrewards( const name owner ) {
       require_auth( owner );
 

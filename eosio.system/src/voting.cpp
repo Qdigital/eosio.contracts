@@ -213,7 +213,10 @@ namespace eosiosystem {
       auto voter = _voters.find( voter_name.value );
       eosio_assert( voter != _voters.end(), "user must stake before they can vote" ); /// staking creates voter object
       eosio_assert( !proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy" );
-
+      
+      // always claim payout before updating votes to prevent double spending
+      _claimpayout(voter);
+      
       /**
        * The first time someone votes we calculate and set last_vote_weight, since they cannot unstake until
        * after total_activated_stake hits threshold, we can use last_vote_weight to determine that this is
