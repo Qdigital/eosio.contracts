@@ -87,14 +87,12 @@ namespace eosiosystem {
      }
      
      const auto token_supply = eosio::token::get_supply(token_account, core_symbol().code() );
-     
-     const auto staked_tokens = asset(voter.staked, core_symbol());
-     
+          
      // number of tokens that were issued since the last time the user claimed
      const auto inflation_bucket = token_supply - voter.last_claim_supply; 
      
      const auto community_share = inflation_bucket * 2 / 5; // 2%
-     const auto user_percentage = voter.last_vote_weight * n_voted_producers / _gstate.total_producer_vote_weight;
+     const auto user_percentage = voter.last_vote_weight * double(n_voted_producers) / _gstate.total_producer_vote_weight;
      const auto payout_amount = static_cast<int64_t>( 
        double(community_share.amount) *  user_percentage
      );
