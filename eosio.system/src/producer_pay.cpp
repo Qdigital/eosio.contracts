@@ -76,6 +76,7 @@ namespace eosiosystem {
    using namespace eosio;
    void system_contract::do_claimpayout( const name user, const bool should_raise) {
      const auto &voter = _voters.get(user.value, "No voter information found");
+     const auto token_supply = eosio::token::get_supply(token_account, core_symbol().code() );
      const auto n_voted_producers = voter.producers.size();
      const auto assertion_1 = voter.proxy || n_voted_producers > 21;
      const auto assertion_2 = current_time_point() - voter.last_claim_time > microseconds(useconds_per_day);
@@ -83,11 +84,16 @@ namespace eosiosystem {
        eosio_assert(assertion_1, "You must vote for more than 21 BPs or set a proxy in order to be eligible");
        eosio_assert(assertion_2, "already claimed payout within past day" );       
      } else {
-       if(!assertion_1 or !assertion_2) return;
+       // always modify last_claim_supply and time when user changes their vote/stakes/unstakes
+       if(!assertion_1 || !assertion_2) {
+         _voters.modify(voter, same_payer, [&](auto& v) {
+           v.last_claim_time = current_time_point();
+           v.last_claim_supply = token_supply;
+         });
+         return;
+       }
      }
-     
-     const auto token_supply = eosio::token::get_supply(token_account, core_symbol().code() );
-          
+               
      // number of tokens that were issued since the last time the user claimed
      const auto inflation_bucket = token_supply - voter.last_claim_supply; 
      
