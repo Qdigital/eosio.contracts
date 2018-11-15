@@ -330,8 +330,7 @@ namespace eosiosystem {
       private:
          // Implementation details:
          
-         [[eosio::action]]
-         void _claimpayout( const name user, const bool should_raise = false );
+         void do_claimpayout( const name user, const bool should_raise = false );
          
          static symbol get_core_symbol( const rammarket& rm ) {
             auto itr = rm.find(ramcore_symbol.raw());

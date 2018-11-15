@@ -215,7 +215,7 @@ namespace eosiosystem {
       eosio_assert( !proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy" );
       
       // always claim payout before updating votes to prevent double spending
-      _claimpayout(voter_name);
+      do_claimpayout(voter_name);
       
       /**
        * The first time someone votes we calculate and set last_vote_weight, since they cannot unstake until

@@ -74,9 +74,10 @@ namespace eosiosystem {
    }
 
    using namespace eosio;
-   void system_contract::_claimpayout( const name user, const bool should_raise) {
+   void system_contract::do_claimpayout( const name user, const bool should_raise) {
      const auto &voter = _voters.get(user.value, "No voter information found");
-     const auto assertion_1 = voter.proxy || voter.producers.size() > 21;
+     const auto n_voted_producers = voter.producers.size();
+     const auto assertion_1 = voter.proxy || n_voted_producers > 21;
      const auto assertion_2 = current_time_point() - voter.last_claim_time > microseconds(useconds_per_day);
      if(should_raise) {
        eosio_assert(assertion_1, "You must vote for more than 21 BPs or set a proxy in order to be eligible");
@@ -90,12 +91,12 @@ namespace eosiosystem {
      const auto staked_tokens = asset(voter.staked, core_symbol());
      
      // number of tokens that were issued since the last time the user claimed
-     const auto new_tokens = token_supply - voter.last_claim_supply; 
+     const auto inflation_bucket = token_supply - voter.last_claim_supply; 
      
-     const auto community_share = new_tokens * 2 / 5; // 2%
-     const auto user_percentage = double(voter.staked) / double(token_supply.amount);
+     const auto community_share = inflation_bucket * 2 / 5; // 2%
+     const auto user_percentage = voter.last_vote_weight * n_voted_producers / _gstate.total_producer_vote_weight;
      const auto payout_amount = static_cast<int64_t>( 
-       community_share.amount * user_percentage 
+       double(community_share.amount) *  user_percentage
      );
      
      _voters.modify(voter, same_payer, [&](auto& v) {
@@ -111,7 +112,7 @@ namespace eosiosystem {
    
    void system_contract::claimpayout( const name user ) {
      require_auth( user );
-     _claimpayout(user, true);
+     do_claimpayout(user, true);
    }
    
    void system_contract::claimrewards( const name owner ) {
